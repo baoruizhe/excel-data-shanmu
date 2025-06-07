@@ -28,9 +28,51 @@ jobs:
       run: |
         pyinstaller --onefile --console --hidden-import=multiprocessing --hidden-import=pandas --hidden-import=openpyxl --name="Excel数据处理工具" excel.py
     
-    - name: Upload EXE
+    - name: Upload EXE as Artifact
       uses: actions/upload-artifact@v4
       with:
         name: Excel数据处理工具-Windows
         path: dist/
-        if-no-files-found: error 
+        if-no-files-found: error
+    
+    - name: Get current date
+      id: date
+      run: echo "date=$(Get-Date -Format 'yyyy.MM.dd-HH.mm')" >> $env:GITHUB_OUTPUT
+    
+    - name: Create Release
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ steps.date.outputs.date }}
+        release_name: Excel数据处理工具 v${{ steps.date.outputs.date }}
+        body: |
+          🎉 Excel数据处理工具自动构建版本
+          
+          ## 使用方法：
+          1. 下载下面的 `Excel数据处理工具.exe` 文件
+          2. 将以下文件放在同一目录：
+             - `附件一产品信息及编码-固定不变.xlsx`
+             - `附件二销售出库导出山姆原始表.xlsx`
+          3. 双击运行exe文件
+          
+          ## 功能特点：
+          ✅ 支持一个订单多个商品处理
+          ✅ 智能商品名称匹配
+          ✅ 自动生成OMS上传文件
+          ✅ 显示详细处理日志
+        draft: false
+        prerelease: false
+    
+    - name: Upload Release Asset
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: dist/Excel数据处理工具.exe
+        asset_name: Excel数据处理工具.exe
+        asset_content_type: application/octet-stream 
